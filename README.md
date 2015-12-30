@@ -1,27 +1,121 @@
 # appio
-A Large Scale stream processing toolkit
+A Toolkit for distributed stream processing. Greatly influenced by apache kafka.
 
-This toolkit is greatly influenced by apache kafka.
-
-When implementing stream processing on a large scale, a number of issues have
-to be considered. They include:
+## Concepts
+When implementing stream processing in the large, we must consider
 
 - Scalabilty
-- Partitions
+- Partitioning
 - Fault tolerance
 - Semantics
+- Reprocessing/replay
 - time
-- Event reprocessing/replay
 
-Scalabilty is addressed by "service groups"
+Please visit the project wiki for more information
+### Streams
+### Processors
+### Groups
+### Topics
+### Partitions
 
 ## Getting started
 
+Install ``appio`` in your application server:
 ```
 npm install --save appio
 ```
 
-# An example web application server
+For browser applications, Install ``appio`` using bower. Include the appio 
+script in your html file; - A global variable ``Appio`` will be exposed.
+``
+bower install --save appio
+```
+```
+<script src="/path to appio script"></script>
+```
+
+## A stream processor
+```
+var through = function(cb){
+	return require('through2')({objectMode:true}, cb);
+};
+
+var appio = require('appio-amqp')({/*..amqp and other options..*/});
+//Pull messages from a topic
+appio.stream('app.topic1')
+	//transform message
+	.pipe(through(function(msg, done){
+		this.push({/*..output message..*/});
+	}))
+	//emit output(to another topic)
+	.pipe(appio.stream('app.topic1.reply'));
+```
+
+## Some conventions
+Connect appio in the browser to your application server
+```
+var appio = new Appio({
+	url: 'server hostname',
+	path: '/app path name'
+});
+```
+
+Publish a message on a topic
+```
+appio.writable('a topic name1').write({/*...object properties...*/}).end();
+//or
+appio.publish('a topic name1', {/*...object properties...*/});
+```
+
+Subscribe to messages on a single topic
+```
+appio.readable('a topic name').read(function(){})
+//or
+appio.subscribe('topic1', function(msg){
+	//handle message
+});
+
+```
+
+Subscribe to messages on multiple topics
+```
+appio.readable(['topic1', 'topic2']).read(function(){})
+appio.subscribe(['topic1', 'topic2'], function(msg){
+	//handle message
+});
+
+```
+
+Invoke a command
+```
+appio.invoke('app.command1', {/*..params..*/}, function(err, result){});
+```
+
+Process a command
+```
+appio.provideCommand('app.topic1', function(params, cb){
+	cb(/*..err, results..*/);
+});
+```
+
+Run a query
+```
+appio.query('app.dataset1', {/*..params..*/}, function(qio){
+	//qio is an event emitter with events meta, data, end
+	qio.on('meta', function(queryMetadata){});
+	qio.on('data', function(queryData));
+	qio.on('end', function(){/*..finalize query operation..*/});
+});
+```
+
+Process a query
+```
+appio.provideQuery('app.query.data', function(qio){
+
+});
+```
+
+## An example web application server
 
 ```
 var appio = require('appio');
@@ -31,8 +125,12 @@ var socketio = require('socket.io');
 var through = require('through2');
 var auth = require('some-auth library');
 
-var aioWs = new AppioSio();
-var aioAmqp = new AppioAmqp();
+var sio = socketio({path:'/my-app'});
+var aioWs = new AppioSio(sio);
+var aioAmqp = new AppioAmqp({
+	host: '127.0.0.1',
+	port: '5672'
+});
 
 var authorize = through({objectMode:true}, function(msg, done){
 	//put code to authorize the message here
@@ -83,51 +181,6 @@ aioWs.read('appio.login').pipe(through2({objectMode:true}, function(msg, done){
 }));
 
 ```
-
-## On the browser
-
-Include the appio client script in your html file. A global variable ``Appio`` 
-will be exposed to scripts running in your browser.
-```
-<script src="/path to appio client"></script>
-```
-
-In your script, Connect appio to your application server
-```
-var appio = new Appio({
-	url: 'server hostname',
-	path: '/app path name'
-});
-```
-
-Invoke a command
-```
-appio.invoke('app.command1', {/*..params..*/}, function(err, result){});
-```
-
-Run a query
-```
-appio.query('app.dataset1', {/*..params..*/}, function(qio){
-	//qio is an event emitter with events meta, data, end
-	qio.on('meta', function(queryMetadata){});
-	qio.on('data', function(queryData));
-	qio.on('end', function(){/*..finalize query operation..*/});
-});
-```
-
-Send a message on a topic
-```
-appio.topic('a topic name1').write({/*...object properties...*/});
-```
-
-Subscribe to message(s) on a topic
-```
-appio.topic(['topic1', 'topic2']).read(function(msg){
-	//handle message
-});
-
-```
-## Concepts
 
 ## Api
 
