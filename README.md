@@ -17,6 +17,7 @@ Please visit the project wiki for more information
 ### Groups
 ### Topics
 ### Partitions
+### Adapters
 
 ## Getting started
 
@@ -32,23 +33,6 @@ bower install --save appio
 ```
 ```
 <script src="/path to appio script"></script>
-```
-
-## A stream processor
-```
-var through = function(cb){
-	return require('through2')({objectMode:true}, cb);
-};
-
-var appio = require('appio-amqp')({/*..amqp and other options..*/});
-//Pull messages from a topic
-appio.stream('app.topic1')
-	//transform message
-	.pipe(through(function(msg, done){
-		this.push({/*..output message..*/});
-	}))
-	//emit output(to another topic)
-	.pipe(appio.stream('app.topic1.reply'));
 ```
 
 ## Some conventions
@@ -115,10 +99,26 @@ appio.provideQuery('app.query.data', function(qio){
 });
 ```
 
+A stream processor/microservice
+```
+var through = function(cb){
+	return require('through2')({objectMode:true}, cb);
+};
+
+//Pull messages from a topic
+appio.readable('app.topic1')
+	//transform message
+	.pipe(through(function(msg, done){
+		this.push({/*..output message..*/});
+	}))
+	//emit output(to another topic)
+	.pipe(appio.writable('app.topic1.reply'));
+```
+
 ## An example web application server
 
+Typically, an application server will depend on adapters
 ```
-var appio = require('appio');
 var AppioAmqp = require('appio-amqp');
 var AppioSio = rquire('appio-socketio');
 var socketio = require('socket.io');
@@ -147,7 +147,7 @@ aioWs
 	.pipe(aiows);
 
 // to treat certain topics specially we can write
-aioWs.read('appio.login').pipe(through2({objectMode:true}, function(msg, done){
+aioWs.readable('appio.login').pipe(through2({objectMode:true}, function(msg, done){
 	//Authenticate credentials and save user to session
 	auth(function(err, user){
 		if(err){
@@ -168,8 +168,7 @@ aioWs.read('appio.login').pipe(through2({objectMode:true}, function(msg, done){
 	})
 	// push success message through here
 	//send response message here
-	aioWs.write({
-		topic:'appio.login.reply',
+	aioWs.writeable('appio.login.reply').write({
 		body:{
 			status:200,
 			data:{
