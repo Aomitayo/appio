@@ -27,7 +27,7 @@ npm install --save appio
 
 For browser applications, Install ``appio`` using bower. Include the appio 
 script in your html file; - A global variable ``Appio`` will be exposed.
-``
+```
 bower install --save appio
 ```
 ```
