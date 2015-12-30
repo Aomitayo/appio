@@ -1,0 +1,25 @@
+{
+  "name": "appio",
+  "version": "0.0.1",
+  "description": "A Toolkit for distributed stream processing",
+  "main": "appio.js",
+  "scripts": {
+    "test": "npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Aomitayo/appio.git"
+  },
+  "keywords": [
+    "appio",
+    "\"stream",
+    "processing\"",
+    "\"microservice\""
+  ],
+  "author": "Adedayo Omitayo <adedayo.omitayo@flowswift.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Aomitayo/appio/issues"
+  },
+  "homepage": "https://github.com/Aomitayo/appio"
+}

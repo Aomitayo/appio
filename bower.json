@@ -1,0 +1,27 @@
+{
+  "name": "appio",
+  "description": "A Toolkit for distributed stream processing",
+  "main": "appio-client-socketio.js",
+  "authors": [
+    "Adedayo Omitayo <adedayo.omitayo@flowswift.com>"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "appio",
+    "\"stream",
+    "processing\"",
+    "\"microservice\""
+  ],
+  "homepage": "https://github.com/Aomitayo/appio",
+  "moduleType": [
+    "globals"
+  ],
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests",
+	"appio.js"
+  ]
+}
