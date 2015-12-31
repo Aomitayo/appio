@@ -2,9 +2,9 @@
   "name": "appio",
   "version": "0.0.1",
   "description": "A Toolkit for distributed stream processing",
-  "main": "appio.js",
+  "main": "src/appio.js",
   "scripts": {
-    "test": "npm test"
+    "test": "gulp test"
   },
   "repository": {
     "type": "git",
@@ -21,5 +21,23 @@
   "bugs": {
     "url": "https://github.com/Aomitayo/appio/issues"
   },
-  "homepage": "https://github.com/Aomitayo/appio"
+  "homepage": "https://github.com/Aomitayo/appio",
+  "devDependencies": {
+    "beepbeep": "^1.2.0",
+    "chai": "^3.4.1",
+    "colors": "^1.1.2",
+    "gulp": "^3.9.0",
+    "gulp-bump": "^1.0.0",
+    "gulp-jshint": "^2.0.0",
+    "gulp-load-plugins": "^1.1.0",
+    "gulp-spawn-mocha": "^2.2.2",
+    "gulp-util": "^3.0.7",
+    "jshint": "^2.8.0",
+    "jshint-stylish": "^2.1.0",
+    "mocha": "^2.3.4",
+    "require-dir": "^0.3.0",
+    "run-sequence": "^1.1.5",
+    "sinon": "^1.17.2",
+    "sinon-chai": "^2.8.0"
+  }
 }
