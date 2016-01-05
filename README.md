@@ -1,23 +1,86 @@
 # appio
-A Toolkit for distributed stream processing. Greatly influenced by apache kafka.
+A Toolkit for distributed stream processing in nodejs and the browser.
 
-## Concepts
-When implementing stream processing in the large, we must consider
+## Introduction
+The package makes it easy to leverage the nodejs stream abstractions for
+implementing distributed data processing pipelines. i.e Data processing in the
+large.
 
-- Scalabilty
-- Partitioning
-- Fault tolerance
-- Semantics
-- Reprocessing/replay
-- time
+With Appio, processing pipelines are made of Connectors, Processing Elements and
+Adapters. Connectors connect processing elements to message delivery mechanisms
+whilst processing elements implement messaging patterns and semantics. Adapters 
+transform messages between one connector or processing element and another 
+connector or processing element.
 
-Please visit the project wiki for more information
-### Streams
-### Processors
-### Groups
-### Topics
-### Partitions
-### Adapters
+### Connectors
+Connectors are duplex streams that adapt messages between appio components and a 
+message delivery mechanism like Amqplib or socket.io. A connector, as in the 
+illustration below has a readable stream (``a``) and a writable stream (``b``).
+
+
+					 __________
+					|			|
+					|	M	 ___|___
+					|	E	|	C	|
+					|	S	|	O	|--> b
+					|	S	|	N	|
+					|	A	|	N	|
+					|	G	|	E	|
+					|	E	|	C	|
+					|		|	T	|
+					|		|	O	|
+					|	B	|	R	|<-- c
+					|	U	|_______|
+					|	S		|
+					|___________|
+
+
+### Processing elements
+A processing element is a duplex stream that implements messaging patterns and
+semantics. It provides the API for implementing commands(request-respond), 
+queries, change feeds, publish-subscribe, heartbeats et cetera.
+
+							 ___|___
+							|		(O--COMMAND1
+							|	P	|
+							|	R	|
+						a-->|	O	(O--DATASET
+							|	C	|
+							|	E	|
+							|	S	(O--CHANGE FEED
+							|	S	|
+							|	I	(O--MESSAGE PROCESSING
+							|	N	|			.
+							|	G	|			.
+							|		|			.
+							|	E	|			.
+							|	L	|			.
+							|	E	|			.
+							|	M	(O--COMMAND2
+						b<--|	E	|			.
+							|	N	|			.
+							|	T	|
+							|_______|
+
+
+### Adapter
+An Adapter can be visualized as a double duplex stream implemented by 
+2 transform streams as illustrated below.
+
+						 _______
+						|		|
+				   a -->| -T1-  |--> b
+						|		|
+						|		|
+				   d <--| -T2-	|<-- c
+						|_______|
+
+Transform stream ``T1`` transforms data from ``a`` to ``b`` whilst ``T2`` 
+transforms data from ``c`` to ``d``. Streams ``a`` and ``d`` are the writable 
+and readable ends of a single duplex stream, whilst ``b`` and ``c`` are the ends
+of another duplex stream.
+
+Please visit the project [wiki] for more information
 
 ## Getting started
 
@@ -32,101 +95,90 @@ script in your html file; - A global variable ``Appio`` will be exposed.
 bower install --save appio
 ```
 ```
-<script src="/path to appio script"></script>
+<script src="/appio/appio-client-socketio"></script>
+```
+### A sample microservice
+
+```
+var appio = require('appio')('myservice');
+
+//appio to amqp connector package
+var appioAmqp = require('appio-connect-amqp')({
+	host: '127.0.0.1',
+	port: '5672',
+});
+appioAmqp.pipe(appio).pipe(appioAmqp);
+
+// say hello
+appio.fulfill('myservice.hello', function(params, cb){
+	return cb(null, 'Hello ' + params.name);
+});
+
+appio.dataset('myservice.dataset1')
+	.query(function(params, qio){
+		db.query(params, function(meta, records){
+			qio.meta(meta);
+			records.forEach(function(r){
+				qio.data.write(r);
+			});
+			qio.end();
+		});
+	})
+	.changeFeed(function(params, qio){
+		db.watch(params, function(changeSpec){
+			qio.changes.write(changeSpec);
+		});
+	});
 ```
 
-## Some conventions
-Connect appio in the browser to your application server
+### A sample client in another service
+```
+var appio = require('appio')('myotherservice');
+
+//appio to amqp connector package
+var appioAmqp = require('appio-connect-amqp')({
+	host: '127.0.0.1',
+	port: '5672',
+});
+appioAmqp.pipe(appio).pipe(appioAmqp);
+
+// say hello
+appio.request('myservice.hello',{name: 'John Doe'} function(err, greeting){
+	console.log(greeting); //logs 'Hello John Doe'
+});
+```
+
+### A browser client
 ```
 var appio = new Appio({
 	url: 'server hostname',
 	path: '/app path name'
 });
-```
 
-Publish a message on a topic
-```
-appio.writable('a topic name1').write({/*...object properties...*/}).end();
-//or
-appio.publish('a topic name1', {/*...object properties...*/});
-```
-
-Subscribe to messages on a single topic
-```
-appio.readable('a topic name').read(function(){})
-//or
-appio.subscribe('topic1', function(msg){
-	//handle message
-});
-
-```
-
-Subscribe to messages on multiple topics
-```
-appio.readable(['topic1', 'topic2']).read(function(){})
-appio.subscribe(['topic1', 'topic2'], function(msg){
-	//handle message
-});
-
-```
-
-Invoke a command
-```
-appio.invoke('app.command1', {/*..params..*/}, function(err, result){});
-```
-
-Process a command
-```
-appio.provideCommand('app.topic1', function(params, cb){
-	cb(/*..err, results..*/);
+// say hello
+appio.request('myservice.hello',{name: 'John Doe'} function(err, greeting){
+	alert(greeting); //pops up 'Hello John Doe'
 });
 ```
 
-Run a query
+### An example web application server
 ```
-appio.query('app.dataset1', {/*..params..*/}, function(qio){
-	//qio is an event emitter with events meta, data, end
-	qio.on('meta', function(queryMetadata){});
-	qio.on('data', function(queryData));
-	qio.on('end', function(){/*..finalize query operation..*/});
+//appio to amqp connector package
+var appioAmqp = require('appio-connect-amqp')({
+	host: '127.0.0.1',
+	port: '5672',
 });
-```
 
-Process a query
-```
-appio.provideQuery('app.query.data', function(qio){
+var sio = socketio({path:'/my-app'});
+var AppioSio = require('appio-socketio');
+var aioWs = new AppioSio(sio);
 
-});
-```
-
-A stream processor/microservice
-```
-var through = function(cb){
-	return require('through2')({objectMode:true}, cb);
-};
-
-//Pull messages from a topic
-appio.readable('app.topic1')
-	//transform message
-	.pipe(through(function(msg, done){
-		this.push({/*..output message..*/});
-	}))
-	//emit output(to another topic)
-	.pipe(appio.writable('app.topic1.reply'));
-```
-
-## An example web application server
-
-Typically, an application server will depend on adapters
-```
+appioAmqp.pipe(appio).pipe(appioAmqp);
 var AppioAmqp = require('appio-amqp');
-var AppioSio = rquire('appio-socketio');
 var socketio = require('socket.io');
 var through = require('through2');
 var auth = require('some-auth library');
 
-var sio = socketio({path:'/my-app'});
-var aioWs = new AppioSio(sio);
 var aioAmqp = new AppioAmqp({
 	host: '127.0.0.1',
 	port: '5672'
@@ -183,4 +235,15 @@ aioWs.readable('appio.login').pipe(through2({objectMode:true}, function(msg, don
 
 ## Api
 
+### Appio#connect(source, sink)
 
+### Appio.request(commandName, params, cb)
+### Appio.fulfill(commandName, cb);
+### Appio.query(datasetName, params, cb);
+	- cb(qio)
+### Appio.dataset(datasetName).query(cb);
+	- cb(params, qio);
+### Appio.watch(datasetName, params, cb)
+	- cb(qio)
+### Appio.dataset(datasetName).changeFeed(cb)
+	- cb(qio)
