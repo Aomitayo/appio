@@ -22,14 +22,14 @@ illustration below has a readable stream (``a``) and a writable stream (``b``).
 					|			|
 					|	M	 ___|___
 					|	E	|	C	|
-					|	S	|	O	|--> b
+					|	S	|	O	|--> a
 					|	S	|	N	|
 					|	A	|	N	|
 					|	G	|	E	|
 					|	E	|	C	|
 					|		|	T	|
 					|		|	O	|
-					|	B	|	R	|<-- c
+					|	B	|	R	|<-- b
 					|	U	|_______|
 					|	S		|
 					|___________|
@@ -163,87 +163,47 @@ appio.request('myservice.hello',{name: 'John Doe'} function(err, greeting){
 
 ### An example web application server
 ```
-//appio to amqp connector package
-var appioAmqp = require('appio-connect-amqp')({
+var http = require('http');
+var socketio = require('socket.io');
+var Appio = require('appio');
+
+var httpServer = http.createServer();
+var sio = socketio({path:'/my-app'});
+sio.attach(httpServer);
+
+// Appio instance
+var aio = Appio('myappserver');
+
+//Configure AMQP connector
+var appioAmqp = Appio.AmqpConnector({
 	host: '127.0.0.1',
 	port: '5672',
 });
 
-var sio = socketio({path:'/my-app'});
-var AppioSio = require('appio-socketio');
-var aioWs = new AppioSio(sio);
+//Configure Socketio connector
+var aioWs = Appio.SocketioConnector(sio);
 
-appioAmqp.pipe(appio).pipe(appioAmqp);
-var AppioAmqp = require('appio-amqp');
-var socketio = require('socket.io');
-var through = require('through2');
-var auth = require('some-auth library');
+//Wire connectors
+aioWs.pipe(aio).pipe(aioWs);
+var aioFork = aio.fork();
+aioFork.pipe(aioAmqp).pipe(aiofork);
 
-var aioAmqp = new AppioAmqp({
-	host: '127.0.0.1',
-	port: '5672'
-});
 
-var authorize = through({objectMode:true}, function(msg, done){
-	//put code to authorize the message here
-}));
-
-var filter = through({objectMode:true}, function(msg, done){
-	//put code to filter here
-});
-
-aioWs
-	.pipe(authorize)
-	.pipe(aioAmqp)
-	.pipe(filter)
-	.pipe(aiows);
-
-// to treat certain topics specially we can write
-aioWs.readable('appio.login').pipe(through2({objectMode:true}, function(msg, done){
-	//Authenticate credentials and save user to session
-	auth(function(err, user){
-		if(err){
-			//send error message to 
-			aioWs.writeToTopic('appio.login.reply', {
-				status: 500,
-				description: 'forbidden'			
-			});
-		}
-		
-		if(!user){
-			//Respond with forbidden message to 
-			aioWs.writeToTopic('appio.login.reply', {
-				status: 403,
-				description: 'forbidden'			
-			});
-		}
-	})
-	// push success message through here
-	//send response message here
-	aioWs.writeable('appio.login.reply').write({
-		body:{
-			status:200,
-			data:{
-				name: 'John Doe',
-				privileges:['Dataset1 admin']			
-			}
-		}
-	});
-}));
+httpServer.listen(process.env.HTTP_PORT || 3000);
 
 ```
 
 ## Api
 
-### Appio#connect(source, sink)
+### Appio#fork(source, sink)
 
 ### Appio.request(commandName, params, cb)
 ### Appio.fulfill(commandName, cb);
 ### Appio.query(datasetName, params, cb);
 	- cb(qio)
-### Appio.dataset(datasetName).query(cb);
-	- cb(params, qio);
 ### Appio.watch(datasetName, params, cb)
 	- cb(qio)
+### Appio.dataset(datasetName).query(cb);
+	- cb(params, qio);
 ### Appio.dataset(datasetName).changeFeed(cb)
 	- cb(qio)
