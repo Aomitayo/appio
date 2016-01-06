@@ -1,7 +1,8 @@
 {
   "name": "appio",
   "description": "A Toolkit for distributed stream processing",
-  "main": "appio-client-socketio.js",
+  "version": "0.0.1",
+  "main": "dist/appio-client.js",
   "authors": [
     "Adedayo Omitayo <adedayo.omitayo@flowswift.com>"
   ],
@@ -22,6 +23,6 @@
     "bower_components",
     "test",
     "tests",
-	"appio.js"
+    "appio.js"
   ]
 }

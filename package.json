@@ -39,5 +39,8 @@
     "run-sequence": "^1.1.5",
     "sinon": "^1.17.2",
     "sinon-chai": "^2.8.0"
+  },
+  "dependencies": {
+    "lodash": "^3.10.1"
   }
 }
